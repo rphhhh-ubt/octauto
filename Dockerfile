@@ -26,10 +26,11 @@ FROM scratch
 
 ARG VERSION
 ARG COMMIT
+ARG REPO_URL="https://github.com/rphhhh-ubt/octauto"
 
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${COMMIT}"
-LABEL org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}"
+LABEL org.opencontainers.image.source="${REPO_URL}"
 LABEL org.opencontainers.image.description="Remnawave Telegram Shop Bot"
 LABEL org.opencontainers.image.licenses="MIT"
 
