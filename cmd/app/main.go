@@ -509,10 +509,18 @@ func checkYookasaInvoice(
 			slog.Info("Invoice processed", "invoiceId", invoice.ID, "purchaseId", purchaseId)
 		}
 
-		// Сохраняем payment_method_id если способ оплаты был сохранён для рекуррентных платежей
-		// Requirements: 1.3
+		// Управление recurring после успешной оплаты YooKassa
 		if invoice.IsPaymentMethodSaved() {
+			// Пользователь включил автопродление — сохраняем payment_method_id
 			saveRecurringPaymentMethod(ctx, invoice, purchase.CustomerID, customerRepository)
+		} else {
+			// Пользователь НЕ включил автопродление — отключаем существующий recurring
+			// Это происходит когда пользователь снял чекбокс при покупке
+			if err := customerRepository.DisableRecurring(ctx, purchase.CustomerID); err != nil {
+				slog.Error("Error disabling recurring after purchase without save", "customerID", purchase.CustomerID, "error", err)
+			} else {
+				slog.Info("Disabled recurring after purchase without payment method save", "customerID", purchase.CustomerID)
+			}
 		}
 
 	}

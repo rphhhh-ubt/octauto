@@ -130,6 +130,16 @@ func (s PaymentService) ProcessPurchaseById(ctx context.Context, purchaseId int6
 		} else {
 			slog.Info("Cleared promo offer after purchase", "customerId", customer.ID)
 		}
+
+		// Отключаем автоплатёж при покупке промо тарифа
+		// Это предотвращает неожиданное списание по старым настройкам recurring
+		if customer.RecurringEnabled {
+			if err := s.customerRepository.DisableRecurring(ctx, customer.ID); err != nil {
+				slog.Error("Error disabling recurring after promo purchase", "error", err, "customerId", customer.ID)
+			} else {
+				slog.Info("Disabled recurring after promo tariff purchase", "customerId", customer.ID)
+			}
+		}
 	}
 
 	// Очищаем winback offer после успешной покупки (если был использован)
