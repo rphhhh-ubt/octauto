@@ -108,6 +108,11 @@ func (h Handler) TariffCallbackHandler(ctx context.Context, b *bot.Bot, update *
 		})
 	}
 
+	// Текст с информацией о тарифе
+	pricingText := h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+		"devices": tariff.Devices,
+	})
+
 	// Пробуем отредактировать, если не получится (фото) — отправляем новое
 	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
@@ -116,7 +121,7 @@ func (h Handler) TariffCallbackHandler(ctx context.Context, b *bot.Bot, update *
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: keyboard,
 		},
-		Text: h.translation.GetText(langCode, "pricing_info"),
+		Text: pricingText,
 	})
 
 	if err != nil {
@@ -133,7 +138,7 @@ func (h Handler) TariffCallbackHandler(ctx context.Context, b *bot.Bot, update *
 			ReplyMarkup: models.InlineKeyboardMarkup{
 				InlineKeyboard: keyboard,
 			},
-			Text: h.translation.GetText(langCode, "pricing_info"),
+			Text: pricingText,
 		})
 	}
 }

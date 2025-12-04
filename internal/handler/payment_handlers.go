@@ -240,13 +240,17 @@ func (h Handler) showTariffPriceMenuNew(ctx context.Context, b *bot.Bot, chatID 
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart},
 	})
 
+	pricingText := h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+		"devices": tariff.Devices,
+	})
+
 	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    chatID,
 		ParseMode: models.ParseModeHTML,
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: keyboard,
 		},
-		Text: h.translation.GetText(langCode, "pricing_info"),
+		Text: pricingText,
 	})
 
 	if err != nil {
@@ -314,6 +318,10 @@ func (h Handler) showTariffPriceMenu(ctx context.Context, b *bot.Bot, callback *
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart},
 	})
 
+	pricingText := h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+		"devices": tariff.Devices,
+	})
+
 	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
@@ -321,7 +329,7 @@ func (h Handler) showTariffPriceMenu(ctx context.Context, b *bot.Bot, callback *
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: keyboard,
 		},
-		Text: h.translation.GetText(langCode, "pricing_info"),
+		Text: pricingText,
 	})
 
 	if err != nil {
@@ -337,7 +345,7 @@ func (h Handler) showTariffPriceMenu(ctx context.Context, b *bot.Bot, callback *
 			ReplyMarkup: models.InlineKeyboardMarkup{
 				InlineKeyboard: keyboard,
 			},
-			Text: h.translation.GetText(langCode, "pricing_info"),
+			Text: pricingText,
 		})
 	}
 }
@@ -409,7 +417,7 @@ func (h Handler) showLegacyPriceMenu(ctx context.Context, b *bot.Bot, callback *
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: keyboard,
 		},
-		Text: h.translation.GetText(langCode, "pricing_info"),
+		Text: h.translation.GetText(langCode, "pricing_info_legacy"),
 	})
 
 	if err != nil {
@@ -425,7 +433,7 @@ func (h Handler) showLegacyPriceMenu(ctx context.Context, b *bot.Bot, callback *
 			ReplyMarkup: models.InlineKeyboardMarkup{
 				InlineKeyboard: keyboard,
 			},
-			Text: h.translation.GetText(langCode, "pricing_info"),
+			Text: h.translation.GetText(langCode, "pricing_info_legacy"),
 		})
 	}
 }
@@ -763,8 +771,13 @@ func (h Handler) showPaymentMethodsWithRecurring(ctx context.Context, b *bot.Bot
 	if config.IsYookasaEnabled() && config.IsRecurringPaymentsEnabled() {
 		customer, err := h.customerRepository.FindByTelegramId(ctx, callback.Chat.ID)
 		if err == nil && customer != nil && customer.PaymentMethodID != nil {
+			// Передаём параметры чтобы кнопка "Назад" вернула в это меню
+			savedCallback := fmt.Sprintf("%s?m=%s&a=%s", CallbackSavedPaymentMethods, month, amount)
+			if tariff != "" {
+				savedCallback += fmt.Sprintf("&n=%s", tariff)
+			}
 			keyboard = append(keyboard, []models.InlineKeyboardButton{
-				{Text: h.translation.GetText(langCode, "saved_payment_methods_button"), CallbackData: CallbackSavedPaymentMethods},
+				{Text: h.translation.GetText(langCode, "saved_payment_methods_button"), CallbackData: savedCallback},
 			})
 		}
 	}
@@ -1022,7 +1035,7 @@ func (h Handler) showLegacyPriceMenuNew(ctx context.Context, b *bot.Bot, chatID 
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: keyboard,
 		},
-		Text: h.translation.GetText(langCode, "pricing_info"),
+		Text: h.translation.GetText(langCode, "pricing_info_legacy"),
 	})
 
 	if err != nil {
@@ -1067,8 +1080,19 @@ func (h Handler) SavedPaymentMethodsCallbackHandler(ctx context.Context, b *bot.
 				{{Text: h.translation.GetText(langCode, "close_button"), CallbackData: CallbackCloseMessage}},
 			}
 		} else {
+			// Формируем callback для возврата в меню способов оплаты
+			backCallback := CallbackBuy
+			month := callbackQuery["m"]
+			amount := callbackQuery["a"]
+			tariff := callbackQuery["n"]
+			if month != "" && amount != "" {
+				backCallback = fmt.Sprintf("%s?month=%s&amount=%s", CallbackSell, month, amount)
+				if tariff != "" {
+					backCallback += fmt.Sprintf("&tariff=%s", tariff)
+				}
+			}
 			keyboard = [][]models.InlineKeyboardButton{
-				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy}},
+				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: backCallback}},
 			}
 		}
 	} else {
@@ -1110,8 +1134,19 @@ func (h Handler) SavedPaymentMethodsCallbackHandler(ctx context.Context, b *bot.
 				{Text: h.translation.GetText(langCode, "close_button"), CallbackData: CallbackCloseMessage},
 			})
 		} else {
+			// Формируем callback для возврата в меню способов оплаты
+			backCallback := CallbackBuy
+			month := callbackQuery["m"]
+			amount := callbackQuery["a"]
+			tariff := callbackQuery["n"]
+			if month != "" && amount != "" {
+				backCallback = fmt.Sprintf("%s?month=%s&amount=%s", CallbackSell, month, amount)
+				if tariff != "" {
+					backCallback += fmt.Sprintf("&tariff=%s", tariff)
+				}
+			}
 			keyboard = append(keyboard, []models.InlineKeyboardButton{
-				{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
+				{Text: h.translation.GetText(langCode, "back_button"), CallbackData: backCallback},
 			})
 		}
 	}
