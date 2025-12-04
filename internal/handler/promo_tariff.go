@@ -26,6 +26,10 @@ func (h Handler) AdminPromoTariffCallback(ctx context.Context, b *bot.Bot, updat
 		return
 	}
 
+	// Clear any pending input states when returning to menu
+	h.cache.Delete(fmt.Sprintf("admin_promo_state_%d", update.CallbackQuery.From.ID))
+	h.cache.Delete(fmt.Sprintf("admin_promo_tariff_state_%d", update.CallbackQuery.From.ID))
+
 	keyboard := &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{{Text: "➕ Создать промокод на тариф", CallbackData: "admin_promo_tariff_create"}},
@@ -56,6 +60,10 @@ func (h Handler) AdminPromoTariffCreateCallback(ctx context.Context, b *bot.Bot,
 	if update.CallbackQuery.From.ID != config.GetAdminTelegramId() {
 		return
 	}
+
+	// Clear conflicting state from regular promo handler
+	conflictKey := fmt.Sprintf("admin_promo_state_%d", update.CallbackQuery.From.ID)
+	h.cache.Delete(conflictKey)
 
 	// Set state
 	key := fmt.Sprintf("admin_promo_tariff_state_%d", update.CallbackQuery.From.ID)
@@ -553,11 +561,6 @@ func (h Handler) showPromoTariffPaymentOptions(ctx context.Context, b *bot.Bot, 
 		})
 	}
 
-	if config.GetTributeWebHookUrl() != "" {
-		keyboard = append(keyboard, []models.InlineKeyboardButton{
-			{Text: h.translation.GetText(langCode, "tribute_button"), URL: config.GetTributePaymentUrl()},
-		})
-	}
 
 	keyboard = append(keyboard, []models.InlineKeyboardButton{
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},

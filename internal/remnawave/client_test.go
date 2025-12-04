@@ -5,73 +5,72 @@ import (
 	"testing/quick"
 )
 
-// **Feature: tariff-system, Property 2: Device Limit Resolution for Null**
-// **Validates: Requirements 3.2**
-// *For any* user with currentLimit == nil, ResolveDeviceLimit SHALL return tariffLimit (apply selected tariff).
-func TestResolveDeviceLimit_NullCurrentLimit(t *testing.T) {
-	f := func(tariffLimit int, allTariffLimits []int) bool {
-		// Для любого tariffLimit и любого списка тарифов,
-		// если currentLimit == nil, результат должен быть tariffLimit
-		result := ResolveDeviceLimit(nil, tariffLimit, allTariffLimits)
+// **Feature: tariff-system, Property 1: Disabled Limit Protection**
+// *For any* user with disabled limit (nil), ResolveDeviceLimit SHALL return nil.
+func TestResolveDeviceLimit_DisabledLimit(t *testing.T) {
+	f := func(tariffLimit int) bool {
+		result := ResolveDeviceLimit(nil, tariffLimit)
+		return result == nil
+	}
+
+	cfg := &quick.Config{MaxCount: 100}
+	if err := quick.Check(f, cfg); err != nil {
+		t.Errorf("Property 1 (disabled limit) failed: %v", err)
+	}
+}
+
+// **Feature: tariff-system, Property 2: Personal Limit Replacement**
+// *For any* user with personal limit, ResolveDeviceLimit SHALL return tariffLimit.
+func TestResolveDeviceLimit_PersonalLimit(t *testing.T) {
+	f := func(currentLimit int, tariffLimit int) bool {
+		result := ResolveDeviceLimit(&currentLimit, tariffLimit)
 		return result != nil && *result == tariffLimit
 	}
 
 	cfg := &quick.Config{MaxCount: 100}
 	if err := quick.Check(f, cfg); err != nil {
-		t.Errorf("Property 2 failed: %v", err)
+		t.Errorf("Property 2 (personal limit) failed: %v", err)
 	}
 }
 
-// **Feature: tariff-system, Property 3: Device Limit Resolution for Custom Limits**
-// **Validates: Requirements 3.3**
-// *For any* user with currentLimit not in tariff limits list, ResolveDeviceLimit SHALL return currentLimit unchanged.
-func TestResolveDeviceLimit_CustomLimit(t *testing.T) {
-	f := func(currentLimit int, tariffLimit int, allTariffLimits []int) bool {
-		// Проверяем, что currentLimit НЕ в списке тарифов
-		isInList := false
-		for _, limit := range allTariffLimits {
-			if currentLimit == limit {
-				isInList = true
-				break
+// **Feature: tariff-system: Concrete test cases**
+func TestResolveDeviceLimit_Scenarios(t *testing.T) {
+	tests := []struct {
+		name         string
+		currentLimit *int
+		tariffLimit  int
+		expected     *int
+	}{
+		// Лимит отключен → не трогаем
+		{"disabled → 3", nil, 3, nil},
+		{"disabled → 6", nil, 6, nil},
+
+		// Персональный → заменить на новый тариф
+		{"3 → 6 (upgrade)", intPtr(3), 6, intPtr(6)},
+		{"6 → 3 (downgrade)", intPtr(6), 3, intPtr(3)},
+		{"3 → 1 (downgrade)", intPtr(3), 1, intPtr(1)},
+		{"1 → 1 (same)", intPtr(1), 1, intPtr(1)},
+		{"5 → 6", intPtr(5), 6, intPtr(6)},
+		{"5 → 3", intPtr(5), 3, intPtr(3)},
+		{"10 → 6", intPtr(10), 6, intPtr(6)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ResolveDeviceLimit(tt.currentLimit, tt.tariffLimit)
+			if tt.expected == nil {
+				if result != nil {
+					t.Errorf("expected nil, got %v", *result)
+				}
+			} else {
+				if result == nil || *result != *tt.expected {
+					t.Errorf("expected %d, got %v", *tt.expected, result)
+				}
 			}
-		}
-
-		// Если currentLimit в списке - пропускаем этот тест-кейс (не наш случай)
-		if isInList {
-			return true
-		}
-
-		// Для кастомного лимита результат должен быть равен currentLimit
-		result := ResolveDeviceLimit(&currentLimit, tariffLimit, allTariffLimits)
-		return result != nil && *result == currentLimit
-	}
-
-	cfg := &quick.Config{MaxCount: 100}
-	if err := quick.Check(f, cfg); err != nil {
-		t.Errorf("Property 3 failed: %v", err)
+		})
 	}
 }
 
-// **Feature: tariff-system, Property 4: Device Limit Resolution for Standard Limits**
-// **Validates: Requirements 3.4, 3.5**
-// *For any* user with currentLimit in tariff limits list, ResolveDeviceLimit SHALL return the selected tariff's limit.
-func TestResolveDeviceLimit_StandardLimit(t *testing.T) {
-	f := func(tariffLimit int, allTariffLimits []int) bool {
-		// Нужен хотя бы один тариф в списке
-		if len(allTariffLimits) == 0 {
-			return true
-		}
-
-		// Берём первый лимит из списка как currentLimit (гарантированно стандартный)
-		currentLimit := allTariffLimits[0]
-
-		// Для стандартного лимита результат должен быть равен tariffLimit
-		result := ResolveDeviceLimit(&currentLimit, tariffLimit, allTariffLimits)
-		return result != nil && *result == tariffLimit
-	}
-
-	cfg := &quick.Config{MaxCount: 100}
-	if err := quick.Check(f, cfg); err != nil {
-		t.Errorf("Property 4 failed: %v", err)
-	}
+func intPtr(i int) *int {
+	return &i
 }

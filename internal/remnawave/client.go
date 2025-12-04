@@ -282,21 +282,20 @@ func (r *Client) updateUserWithDeviceLimit(ctx context.Context, existingUser *re
 	}
 
 	// Применяем лимит устройств если указан тариф
+	// Простая логика: пользователь получает то, за что платит
+	// Если лимит отключен в панели (Null=true) → не трогаем
 	if deviceLimit != nil {
-		// Получаем текущий лимит пользователя
 		var currentLimit *int
-		if existingUser.HwidDeviceLimit.Null == false {
+		if !existingUser.HwidDeviceLimit.Null {
 			val := existingUser.HwidDeviceLimit.Value
 			currentLimit = &val
 		}
 
-		// Определяем финальный лимит с учётом кастомных лимитов
-		allTariffLimits := config.GetAllTariffDeviceLimits()
-		finalLimit := ResolveDeviceLimit(currentLimit, *deviceLimit, allTariffLimits)
+		finalLimit := ResolveDeviceLimit(currentLimit, *deviceLimit)
 
 		if finalLimit != nil {
 			userUpdate.HwidDeviceLimit = remapi.NewOptNilInt(*finalLimit)
-			slog.Debug("Setting device limit", "finalLimit", *finalLimit, "tariffLimit", *deviceLimit)
+			slog.Debug("Setting device limit", "currentLimit", currentLimit, "tariffLimit", *deviceLimit, "finalLimit", *finalLimit)
 		}
 	}
 
@@ -465,33 +464,15 @@ func getUpdateStrategy(s string) remapi.UpdateUserRequestDtoTrafficLimitStrategy
 }
 
 // ResolveDeviceLimit определяет финальный лимит устройств при продлении подписки.
-// Логика:
-// 1. Если currentLimit == nil → установить tariffLimit (новый пользователь или безлимит → применить тариф)
-// 2. Если currentLimit не в списке allTariffLimits → вернуть currentLimit (кастомный лимит)
-// 3. Иначе → вернуть tariffLimit (применить выбранный тариф)
-//
-// **Feature: tariff-system, Property 2-4: Device Limit Resolution**
-func ResolveDeviceLimit(currentLimit *int, tariffLimit int, allTariffLimits []int) *int {
-	// Если текущий лимит nil - устанавливаем лимит из тарифа
-	// (пользователь без лимита должен получить лимит при покупке тарифа)
+// Простая логика: пользователь получает то, за что платит.
+// currentLimit передаётся только если у пользователя есть персональный лимит (Null=false).
+// Если currentLimit == nil (лимит отключен в панели) → не устанавливаем.
+func ResolveDeviceLimit(currentLimit *int, tariffLimit int) *int {
+	// Если лимит отключен в панели (Null=true) → не трогаем
 	if currentLimit == nil {
-		return &tariffLimit
+		return nil
 	}
 
-	// Проверяем, является ли текущий лимит кастомным (не в списке тарифов)
-	isStandardLimit := false
-	for _, limit := range allTariffLimits {
-		if *currentLimit == limit {
-			isStandardLimit = true
-			break
-		}
-	}
-
-	// Если кастомный лимит - сохраняем его
-	if !isStandardLimit {
-		return currentLimit
-	}
-
-	// Стандартный лимит - применяем выбранный тариф
+	// Есть персональный лимит → заменяем на новый тариф
 	return &tariffLimit
 }

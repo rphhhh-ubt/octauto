@@ -246,11 +246,11 @@ func (h *RemnawaveWebhookHandler) processUserExpiresIn24Hours(ctx context.Contex
 			amount,
 		)
 
-		// Кнопка отключения автопродления
+		// Кнопка управления сохранёнными способами оплаты
 		keyboard := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: h.tm.GetText(lang, "recurring_disable_button"), CallbackData: CallbackRecurringDisable},
+					{Text: h.tm.GetText(lang, "saved_payment_methods_button"), CallbackData: CallbackSavedPaymentMethods},
 				},
 			},
 		}

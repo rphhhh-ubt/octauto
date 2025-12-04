@@ -268,6 +268,10 @@ func (h Handler) AdminPromoCallback(ctx context.Context, b *bot.Bot, update *mod
 		return
 	}
 
+	// Clear any pending input states when returning to menu
+	h.cache.Delete(fmt.Sprintf("admin_promo_state_%d", update.CallbackQuery.From.ID))
+	h.cache.Delete(fmt.Sprintf("admin_promo_tariff_state_%d", update.CallbackQuery.From.ID))
+
 	buttons := [][]models.InlineKeyboardButton{
 		{{Text: "➕ Создать промокод", CallbackData: "admin_promo_create"}},
 		{{Text: "📋 Список промокодов", CallbackData: "admin_promo_list"}},
@@ -308,6 +312,10 @@ func (h Handler) AdminPromoCreateCallback(ctx context.Context, b *bot.Bot, updat
 	if update.CallbackQuery.From.ID != config.GetAdminTelegramId() {
 		return
 	}
+
+	// Clear conflicting state from promo tariff handler
+	conflictKey := fmt.Sprintf("admin_promo_tariff_state_%d", update.CallbackQuery.From.ID)
+	h.cache.Delete(conflictKey)
 
 	// Set state
 	key := fmt.Sprintf("admin_promo_state_%d", update.CallbackQuery.From.ID)

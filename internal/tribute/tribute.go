@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -108,7 +109,10 @@ func (c *Client) newSubscriptionHandler(ctx context.Context, wh SubscriptionWebh
 
 	customer, err := c.customerRepository.FindByTelegramId(ctx, wh.Payload.TelegramUserID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find customer: %w", err)
+	}
+	if customer == nil {
+		return fmt.Errorf("customer not found for telegram_id: %d", wh.Payload.TelegramUserID)
 	}
 
 	// Ищем тариф по subscription_name из Tribute для определения deviceLimit

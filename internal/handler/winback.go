@@ -143,11 +143,6 @@ func (h Handler) showWinbackPaymentOptions(ctx context.Context, b *bot.Bot, call
 		})
 	}
 
-	if config.GetTributeWebHookUrl() != "" {
-		keyboard = append(keyboard, []models.InlineKeyboardButton{
-			{Text: h.translation.GetText(langCode, "tribute_button"), URL: config.GetTributePaymentUrl()},
-		})
-	}
 
 	keyboard = append(keyboard, []models.InlineKeyboardButton{
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart},
