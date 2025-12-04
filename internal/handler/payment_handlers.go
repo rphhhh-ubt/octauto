@@ -21,8 +21,21 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 
 	callback := update.CallbackQuery.Message.Message
 	langCode := update.CallbackQuery.From.LanguageCode
+	chatID := update.CallbackQuery.From.ID
 
 	tariffs := config.GetTariffs()
+
+	// Если сообщение недоступно (слишком старое) — отправляем новое
+	if callback == nil {
+		if len(tariffs) > 1 {
+			h.showTariffMenuNew(ctx, b, chatID, langCode, tariffs)
+		} else if len(tariffs) == 1 {
+			h.showTariffPriceMenuNew(ctx, b, chatID, langCode, &tariffs[0])
+		} else {
+			h.showLegacyPriceMenuNew(ctx, b, chatID, langCode)
+		}
+		return
+	}
 
 	// Если тарифов > 1 → показать меню тарифов
 	if len(tariffs) > 1 {
