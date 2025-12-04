@@ -23,6 +23,7 @@ go.work
 *.iws
 *.iml
 *.ipr
+.windsurf/
 
 # OS
 .DS_Store
@@ -43,3 +44,4 @@ vibesubminiapp/.next/
 # Temp
 tmp/
 temp/
+
