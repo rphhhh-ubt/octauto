@@ -56,17 +56,8 @@ func (h Handler) StartCommandHandler(ctx context.Context, b *bot.Bot, update *mo
 				}
 			}
 		}
-	} else {
-		updates := map[string]interface{}{
-			"language": langCode,
-		}
-
-		err = h.customerRepository.UpdateFields(ctx, existingCustomer.ID, updates)
-		if err != nil {
-			slog.Error("Error updating customer", "error", err)
-			return
-		}
 	}
+	// Язык не обновляем — используем DEFAULT_LANGUAGE из конфига
 
 	// Проверяем параметр deep link для перехода к тарифам
 	if strings.Contains(update.Message.Text, "tariffs") || strings.Contains(update.Message.Text, "buy") {
