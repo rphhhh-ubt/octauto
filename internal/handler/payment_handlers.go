@@ -15,6 +15,8 @@ import (
 )
 
 func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	slog.Info("BuyCallbackHandler called", "userID", update.CallbackQuery.From.ID)
+	
 	_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
 	})
@@ -22,6 +24,8 @@ func (h Handler) BuyCallbackHandler(ctx context.Context, b *bot.Bot, update *mod
 	callback := update.CallbackQuery.Message.Message
 	langCode := update.CallbackQuery.From.LanguageCode
 	chatID := update.CallbackQuery.From.ID
+
+	slog.Info("BuyCallbackHandler", "callbackNil", callback == nil, "chatID", chatID)
 
 	tariffs := config.GetTariffs()
 
