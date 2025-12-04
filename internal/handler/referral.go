@@ -14,7 +14,11 @@ func (h Handler) ReferralCallbackHandler(ctx context.Context, b *bot.Bot, update
 		CallbackQueryID: update.CallbackQuery.ID,
 	})
 
-	customer, _ := h.customerRepository.FindByTelegramId(ctx, update.CallbackQuery.From.ID)
+	customer, err := h.customerRepository.FindByTelegramId(ctx, update.CallbackQuery.From.ID)
+	if err != nil || customer == nil {
+		slog.Error("error finding customer for referral", "error", err)
+		return
+	}
 	langCode := update.CallbackQuery.From.LanguageCode
 	refCode := customer.TelegramID
 

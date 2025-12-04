@@ -186,6 +186,18 @@ func (h Handler) StartCallbackHandler(ctx context.Context, b *bot.Bot, update *m
 		return
 	}
 
+	// Если customer не найден (удалён из БД) — создаём заново
+	if existingCustomer == nil {
+		existingCustomer, err = h.customerRepository.Create(ctxWithTime, &database.Customer{
+			TelegramID: callback.From.ID,
+			Language:   langCode,
+		})
+		if err != nil {
+			slog.Error("error creating customer in callback", "error", err)
+			return
+		}
+	}
+
 	inlineKeyboard := h.buildStartKeyboard(existingCustomer, langCode)
 
 	// Пробуем отредактировать, если не получится (фото) — отправляем новое
