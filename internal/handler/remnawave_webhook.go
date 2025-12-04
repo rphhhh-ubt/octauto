@@ -250,7 +250,7 @@ func (h *RemnawaveWebhookHandler) processUserExpiresIn24Hours(ctx context.Contex
 		keyboard := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
-					{Text: h.tm.GetText(lang, "saved_payment_methods_button"), CallbackData: CallbackSavedPaymentMethods},
+					{Text: h.tm.GetText(lang, "saved_payment_methods_button"), CallbackData: CallbackSavedPaymentMethods + "?from=notification"},
 				},
 			},
 		}

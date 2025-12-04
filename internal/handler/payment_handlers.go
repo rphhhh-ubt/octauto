@@ -1041,6 +1041,10 @@ func (h Handler) SavedPaymentMethodsCallbackHandler(ctx context.Context, b *bot.
 	langCode := update.CallbackQuery.From.LanguageCode
 	telegramID := update.CallbackQuery.From.ID
 
+	// Парсим callback data для определения источника вызова
+	callbackQuery := parseCallbackData(update.CallbackQuery.Data)
+	fromNotification := callbackQuery["from"] == "notification"
+
 	// Находим пользователя
 	customer, err := h.customerRepository.FindByTelegramId(ctx, telegramID)
 	if err != nil {
@@ -1058,8 +1062,14 @@ func (h Handler) SavedPaymentMethodsCallbackHandler(ctx context.Context, b *bot.
 	// Если нет сохранённого способа оплаты
 	if customer.PaymentMethodID == nil {
 		text = h.translation.GetText(langCode, "saved_payment_methods_empty")
-		keyboard = [][]models.InlineKeyboardButton{
-			{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy}},
+		if fromNotification {
+			keyboard = [][]models.InlineKeyboardButton{
+				{{Text: h.translation.GetText(langCode, "close_button"), CallbackData: CallbackCloseMessage}},
+			}
+		} else {
+			keyboard = [][]models.InlineKeyboardButton{
+				{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy}},
+			}
 		}
 	} else {
 		// Есть сохранённый способ оплаты
@@ -1094,7 +1104,15 @@ func (h Handler) SavedPaymentMethodsCallbackHandler(ctx context.Context, b *bot.
 
 		keyboard = [][]models.InlineKeyboardButton{
 			{{Text: h.translation.GetText(langCode, "delete_saved_payment_method"), CallbackData: CallbackDeletePaymentMethod}},
-			{{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy}},
+		}
+		if fromNotification {
+			keyboard = append(keyboard, []models.InlineKeyboardButton{
+				{Text: h.translation.GetText(langCode, "close_button"), CallbackData: CallbackCloseMessage},
+			})
+		} else {
+			keyboard = append(keyboard, []models.InlineKeyboardButton{
+				{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
+			})
 		}
 	}
 
