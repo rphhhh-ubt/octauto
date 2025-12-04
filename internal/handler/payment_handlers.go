@@ -119,7 +119,15 @@ func (h Handler) showTariffMenu(ctx context.Context, b *bot.Bot, callback *model
 			strings.Contains(err.Error(), "exactly the same") {
 			return
 		}
-		slog.Error("Error sending tariff menu", slog.Any("error", err))
+		// Fallback: отправляем новое сообщение если не удалось отредактировать
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    callback.Chat.ID,
+			ParseMode: models.ParseModeHTML,
+			ReplyMarkup: models.InlineKeyboardMarkup{
+				InlineKeyboard: keyboard,
+			},
+			Text: h.translation.GetText(langCode, "select_tariff"),
+		})
 	}
 }
 
@@ -322,7 +330,15 @@ func (h Handler) showTariffPriceMenu(ctx context.Context, b *bot.Bot, callback *
 			strings.Contains(err.Error(), "exactly the same") {
 			return
 		}
-		slog.Error("Error sending tariff price menu", slog.Any("error", err))
+		// Fallback: отправляем новое сообщение если не удалось отредактировать
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    callback.Chat.ID,
+			ParseMode: models.ParseModeHTML,
+			ReplyMarkup: models.InlineKeyboardMarkup{
+				InlineKeyboard: keyboard,
+			},
+			Text: h.translation.GetText(langCode, "pricing_info"),
+		})
 	}
 }
 
@@ -402,7 +418,15 @@ func (h Handler) showLegacyPriceMenu(ctx context.Context, b *bot.Bot, callback *
 			strings.Contains(err.Error(), "exactly the same") {
 			return
 		}
-		slog.Error("Error sending buy message", slog.Any("error", err))
+		// Fallback: отправляем новое сообщение если не удалось отредактировать
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:    callback.Chat.ID,
+			ParseMode: models.ParseModeHTML,
+			ReplyMarkup: models.InlineKeyboardMarkup{
+				InlineKeyboard: keyboard,
+			},
+			Text: h.translation.GetText(langCode, "pricing_info"),
+		})
 	}
 }
 
@@ -418,8 +442,16 @@ func (h Handler) SellCallbackHandler(ctx context.Context, b *bot.Bot, update *mo
 	amount := callbackQuery["amount"]
 	tariff := callbackQuery["tariff"] // Получаем имя тарифа из callback
 
-	// Используем новый метод с поддержкой recurring (по умолчанию выключен)
-	h.showPaymentMethodsWithRecurring(ctx, b, callback, langCode, month, amount, tariff, false)
+	// Проверяем есть ли у пользователя сохранённый метод оплаты — если да, включаем recurring по умолчанию
+	recurringEnabled := false
+	if config.IsRecurringPaymentsEnabled() {
+		customer, err := h.customerRepository.FindByTelegramId(ctx, callback.Chat.ID)
+		if err == nil && customer != nil && customer.PaymentMethodID != nil {
+			recurringEnabled = true
+		}
+	}
+
+	h.showPaymentMethodsWithRecurring(ctx, b, callback, langCode, month, amount, tariff, recurringEnabled)
 }
 
 func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -1076,14 +1108,44 @@ func (h Handler) SavedPaymentMethodsCallbackHandler(ctx context.Context, b *bot.
 		},
 	})
 	if err != nil {
-		// Если не удалось отредактировать, отправляем новое сообщение
+		// Если не удалось отредактировать, отправляем новое сообщение с кнопкой закрытия
 		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID:    callback.Chat.ID,
 			ParseMode: models.ParseModeHTML,
 			Text:      text,
 			ReplyMarkup: models.InlineKeyboardMarkup{
-				InlineKeyboard: keyboard,
+				InlineKeyboard: h.savedPaymentMethodsKeyboardWithClose(langCode, customer),
 			},
 		})
 	}
+}
+
+// savedPaymentMethodsKeyboardWithClose формирует клавиатуру для нового сообщения с кнопкой закрытия
+func (h Handler) savedPaymentMethodsKeyboardWithClose(langCode string, customer *database.Customer) [][]models.InlineKeyboardButton {
+	var keyboard [][]models.InlineKeyboardButton
+
+	if customer.PaymentMethodID != nil {
+		keyboard = append(keyboard, []models.InlineKeyboardButton{
+			{Text: h.translation.GetText(langCode, "delete_saved_payment_method"), CallbackData: CallbackDeletePaymentMethod},
+		})
+	}
+
+	keyboard = append(keyboard, []models.InlineKeyboardButton{
+		{Text: h.translation.GetText(langCode, "close_button"), CallbackData: CallbackCloseMessage},
+	})
+
+	return keyboard
+}
+
+// CloseMessageCallbackHandler удаляет сообщение при нажатии на кнопку "Закрыть"
+func (h Handler) CloseMessageCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+	})
+
+	callback := update.CallbackQuery.Message.Message
+	_, _ = b.DeleteMessage(ctx, &bot.DeleteMessageParams{
+		ChatID:    callback.Chat.ID,
+		MessageID: callback.ID,
+	})
 }

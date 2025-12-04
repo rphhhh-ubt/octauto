@@ -6,6 +6,7 @@
   "buy_button": "💰 Buy",
   "connect_button": "🔌 Connect",
   "back_button": "🔙 Back",
+  "close_button": "✖️ Close",
   "pricing_info": "Russian bank cards and cryptocurrency are accepted for payment",
   "month_1": "1 month — {{.price}} ₽",
   "month_3": "3 months — {{.price}} ₽",

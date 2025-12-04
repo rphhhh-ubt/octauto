@@ -19,6 +19,7 @@ const (
 	CallbackDeletePaymentMethod    = "delete_payment_method"
 	CallbackSavedPaymentMethods    = "saved_payment_methods"
 	CallbackPromoTariff            = "promo_tariff"
+	CallbackCloseMessage           = "close_message"
 )
 
 // MaxCallbackDataLength - максимальная длина callback_data в Telegram (64 байта)

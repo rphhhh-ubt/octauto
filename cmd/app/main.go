@@ -227,6 +227,7 @@ func main() {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackRecurringDisable, bot.MatchTypeExact, h.RecurringDisableCallbackHandler, h.SuspiciousUserFilterMiddleware)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackDeletePaymentMethod, bot.MatchTypeExact, h.DeletePaymentMethodCallbackHandler, h.SuspiciousUserFilterMiddleware)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackSavedPaymentMethods, bot.MatchTypeExact, h.SavedPaymentMethodsCallbackHandler, h.SuspiciousUserFilterMiddleware)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, handler.CallbackCloseMessage, bot.MatchTypeExact, h.CloseMessageCallbackHandler, h.SuspiciousUserFilterMiddleware)
 	b.RegisterHandlerMatchFunc(func(update *models.Update) bool {
 		return update.PreCheckoutQuery != nil
 	}, h.PreCheckoutCallbackHandler, h.SuspiciousUserFilterMiddleware)
