@@ -514,8 +514,8 @@ func checkYookasaInvoice(
 			// Пользователь включил автопродление — сохраняем payment_method_id
 			saveRecurringPaymentMethod(ctx, invoice, purchase.CustomerID, customerRepository)
 		} else {
-			// Пользователь НЕ включил автопродление — отключаем существующий recurring
-			// Это происходит когда пользователь снял чекбокс при покупке
+			// Пользователь НЕ включил автопродление для этой покупки — отключаем recurring
+			// Но карту не удаляем — она может пригодиться для будущих покупок
 			if err := customerRepository.DisableRecurring(ctx, purchase.CustomerID); err != nil {
 				slog.Error("Error disabling recurring after purchase without save", "customerID", purchase.CustomerID, "error", err)
 			} else {
