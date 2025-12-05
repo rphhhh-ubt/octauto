@@ -128,8 +128,15 @@ func (s PaymentService) ProcessPurchaseById(ctx context.Context, purchaseId int6
 	}
 
 	// Property 9: Offer Cleared After Purchase
+	// Проверяем была ли это PROMO TARIFF покупка (не просто наличие offer, а именно покупка по promo)
+	// Определяем по совпадению параметров purchase с параметрами promo offer
+	isPromoTariffPurchase := database.HasActivePromoOffer(customer) &&
+		customer.PromoOfferPrice != nil && int(purchase.Amount) == *customer.PromoOfferPrice &&
+		customer.PromoOfferMonths != nil && purchase.Month == *customer.PromoOfferMonths &&
+		customer.PromoOfferDevices != nil && purchase.DeviceLimit != nil && *purchase.DeviceLimit == *customer.PromoOfferDevices
+
 	// Очищаем promo offer после успешной покупки (если был использован)
-	if database.HasActivePromoOffer(customer) {
+	if isPromoTariffPurchase {
 		if err := s.customerRepository.ClearPromoOffer(ctx, customer.ID); err != nil {
 			slog.Error("Error clearing promo offer after purchase", "error", err, "customerId", customer.ID)
 			// Не возвращаем ошибку - покупка уже обработана
@@ -137,24 +144,56 @@ func (s PaymentService) ProcessPurchaseById(ctx context.Context, purchaseId int6
 			slog.Info("Cleared promo offer after purchase", "customerId", customer.ID)
 		}
 
-		// Отключаем автоплатёж при покупке промо тарифа
-		// Это предотвращает неожиданное списание по старым настройкам recurring
-		if customer.RecurringEnabled {
-			if err := s.customerRepository.DisableRecurring(ctx, customer.ID); err != nil {
-				slog.Error("Error disabling recurring after promo purchase", "error", err, "customerId", customer.ID)
+		// Управление recurring при покупке промо тарифа
+		if config.IsPromoTariffRecurringEnabled() {
+			// Автопродление для promo tariff включено — оставляем payment method
+			// Пользователь сможет использовать его для автопродления
+			slog.Info("Promo tariff recurring enabled, keeping payment method", "customerId", customer.ID)
+		} else {
+			// Полностью сбрасываем recurring настройки при покупке промо тарифа
+			// Это предотвращает:
+			// 1. Неожиданное списание по старым настройкам recurring
+			// 2. Сохранение promo данных (tariff, months, amount) для будущих автоплатежей
+			// Пользователь начинает "с чистого листа" по автоплатежам после promo покупки
+			if err := s.customerRepository.DeletePaymentMethod(ctx, customer.ID); err != nil {
+				slog.Error("Error deleting payment method after promo purchase", "error", err, "customerId", customer.ID)
 			} else {
-				slog.Info("Disabled recurring after promo tariff purchase", "customerId", customer.ID)
+				slog.Info("Deleted payment method after promo tariff purchase", "customerId", customer.ID)
 			}
 		}
 	}
 
+	// Проверяем была ли это WINBACK покупка (не просто наличие offer, а именно покупка по winback)
+	// Определяем по совпадению параметров purchase с параметрами winback offer
+	isWinbackPurchase := database.HasActiveWinbackOffer(customer) &&
+		customer.WinbackOfferPrice != nil && int(purchase.Amount) == *customer.WinbackOfferPrice &&
+		customer.WinbackOfferMonths != nil && purchase.Month == *customer.WinbackOfferMonths &&
+		customer.WinbackOfferDevices != nil && purchase.DeviceLimit != nil && *purchase.DeviceLimit == *customer.WinbackOfferDevices
+
 	// Очищаем winback offer после успешной покупки (если был использован)
-	if database.HasActiveWinbackOffer(customer) {
+	if isWinbackPurchase {
 		if err := s.customerRepository.ClearWinbackOffer(ctx, customer.ID); err != nil {
 			slog.Error("Error clearing winback offer after purchase", "error", err, "customerId", customer.ID)
 			// Не возвращаем ошибку - покупка уже обработана
 		} else {
 			slog.Info("Cleared winback offer after purchase", "customerId", customer.ID)
+		}
+
+		// Управление recurring при покупке winback
+		if config.IsWinbackRecurringEnabled() {
+			// Автопродление для winback включено — оставляем payment method
+			slog.Info("Winback recurring enabled, keeping payment method", "customerId", customer.ID)
+		} else {
+			// Полностью сбрасываем recurring настройки при покупке winback
+			// Это предотвращает:
+			// 1. Неожиданное списание по winback цене (специальная низкая цена)
+			// 2. Сохранение winback данных (tariff, months, amount) для будущих автоплатежей
+			// Пользователь начинает "с чистого листа" по автоплатежам после winback покупки
+			if err := s.customerRepository.DeletePaymentMethod(ctx, customer.ID); err != nil {
+				slog.Error("Error deleting payment method after winback purchase", "error", err, "customerId", customer.ID)
+			} else {
+				slog.Info("Deleted payment method after winback purchase", "customerId", customer.ID)
+			}
 		}
 	}
 

@@ -510,11 +510,25 @@ func checkYookasaInvoice(
 		}
 
 		// Управление recurring после успешной оплаты YooKassa
+		// ВАЖНО: ProcessPurchaseById уже мог удалить payment method для promo/winback покупок
+		// когда соответствующий recurring отключён.
+		// Проверяем текущее состояние customer — если payment_method_id уже NULL,
+		// значит ProcessPurchaseById его удалил и не нужно восстанавливать.
 		if invoice.IsPaymentMethodSaved() {
-			// Пользователь включил автопродление — сохраняем payment_method_id
-			// Передаём purchase для fallback данных (если пользователь не включил recurring в боте,
-			// но разрешил автосписания на форме ЮКассы)
-			saveRecurringPaymentMethod(ctx, invoice, purchase.CustomerID, customerRepository, &purchase)
+			// Перечитываем customer чтобы увидеть изменения от ProcessPurchaseById
+			updatedCustomer, err := customerRepository.FindById(ctx, purchase.CustomerID)
+			if err != nil {
+				slog.Error("Error finding customer after purchase", "customerID", purchase.CustomerID, "error", err)
+			} else if updatedCustomer != nil && updatedCustomer.PaymentMethodID == nil {
+				// ProcessPurchaseById удалил payment method (promo/winback с отключённым recurring)
+				// Не восстанавливаем его
+				slog.Info("Payment method was deleted by ProcessPurchaseById, not restoring", "customerID", purchase.CustomerID)
+			} else {
+				// Пользователь включил автопродление — сохраняем payment_method_id
+				// Передаём purchase для fallback данных (если пользователь не включил recurring в боте,
+				// но разрешил автосписания на форме ЮКассы)
+				saveRecurringPaymentMethod(ctx, invoice, purchase.CustomerID, customerRepository, &purchase)
+			}
 		} else {
 			// Пользователь НЕ включил автопродление для этой покупки — отключаем recurring
 			// Но карту не удаляем — она может пригодиться для будущих покупок

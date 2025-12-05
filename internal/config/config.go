@@ -125,7 +125,8 @@ type config struct {
 	recurringPaymentsEnabled   bool
 	recurringNotifyHoursBefore int
 	// Promo tariff codes
-	promoTariffCodesEnabled bool
+	promoTariffCodesEnabled      bool
+	promoTariffRecurringEnabled  bool
 }
 
 var conf config
@@ -479,6 +480,11 @@ func GetRecurringNotifyHoursBefore() int {
 // IsPromoTariffCodesEnabled возвращает true если промокоды на тариф включены
 func IsPromoTariffCodesEnabled() bool {
 	return conf.promoTariffCodesEnabled
+}
+
+// IsPromoTariffRecurringEnabled возвращает true если автопродление для promo tariff включено
+func IsPromoTariffRecurringEnabled() bool {
+	return conf.promoTariffRecurringEnabled
 }
 
 const bytesInGigabyte = 1073741824
@@ -933,7 +939,8 @@ func InitConfig() {
 
 	// Promo tariff codes config
 	conf.promoTariffCodesEnabled = envBool("PROMO_TARIFF_CODES_ENABLED")
+	conf.promoTariffRecurringEnabled = envBool("PROMO_TARIFF_RECURRING_ENABLED")
 	if conf.promoTariffCodesEnabled {
-		slog.Info("Promo tariff codes enabled")
+		slog.Info("Promo tariff codes enabled", "recurringEnabled", conf.promoTariffRecurringEnabled)
 	}
 }

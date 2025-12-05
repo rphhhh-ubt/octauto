@@ -618,8 +618,10 @@ func (h Handler) PaymentCallbackHandler(ctx context.Context, b *bot.Bot, update 
 
 	// Показываем чекбокс автопродления только для YooKassa
 	// Для winback показываем только если WINBACK_RECURRING_ENABLED=true
-	// Для promo tariff не показываем чекбокс автопродления
-	showRecurringCheckbox := invoiceType == database.InvoiceTypeYookasa && config.IsRecurringPaymentsEnabled() && !isPromoTariff && (!isWinback || config.IsWinbackRecurringEnabled())
+	// Для promo tariff показываем только если PROMO_TARIFF_RECURRING_ENABLED=true
+	showRecurringCheckbox := invoiceType == database.InvoiceTypeYookasa && config.IsRecurringPaymentsEnabled() &&
+		(!isWinback || config.IsWinbackRecurringEnabled()) &&
+		(!isPromoTariff || config.IsPromoTariffRecurringEnabled())
 	if showRecurringCheckbox {
 		checkboxText := "☐ " + h.translation.GetText(langCode, "recurring_checkbox")
 		if isRecurring {
