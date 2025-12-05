@@ -210,12 +210,13 @@ func (r *Client) DecreaseSubscription(ctx context.Context, telegramId int64, tra
 }
 
 func (r *Client) CreateOrUpdateUser(ctx context.Context, customerId int64, telegramId int64, trafficLimit int, days int, isTrialUser bool) (*remapi.UserResponseResponse, error) {
-	return r.CreateOrUpdateUserWithDeviceLimit(ctx, customerId, telegramId, trafficLimit, days, isTrialUser, nil)
+	return r.CreateOrUpdateUserWithDeviceLimit(ctx, customerId, telegramId, trafficLimit, days, isTrialUser, nil, false)
 }
 
 // CreateOrUpdateUserWithDeviceLimit создаёт или обновляет пользователя с указанным лимитом устройств.
 // deviceLimit - лимит устройств из выбранного тарифа (nil = не устанавливать)
-func (r *Client) CreateOrUpdateUserWithDeviceLimit(ctx context.Context, customerId int64, telegramId int64, trafficLimit int, days int, isTrialUser bool, deviceLimit *int) (*remapi.UserResponseResponse, error) {
+// forceDeviceLimit - если true, устанавливает deviceLimit принудительно (для winback/promo первых покупок)
+func (r *Client) CreateOrUpdateUserWithDeviceLimit(ctx context.Context, customerId int64, telegramId int64, trafficLimit int, days int, isTrialUser bool, deviceLimit *int, forceDeviceLimit bool) (*remapi.UserResponseResponse, error) {
 	resp, err := r.client.UsersControllerGetUserByTelegramId(ctx, remapi.UsersControllerGetUserByTelegramIdParams{TelegramId: strconv.FormatInt(telegramId, 10)})
 	if err != nil {
 		return nil, err
@@ -235,18 +236,19 @@ func (r *Client) CreateOrUpdateUserWithDeviceLimit(ctx context.Context, customer
 		if existingUser == nil {
 			existingUser = &v.GetResponse()[0]
 		}
-		return r.updateUserWithDeviceLimit(ctx, existingUser, trafficLimit, days, deviceLimit)
+		return r.updateUserWithDeviceLimit(ctx, existingUser, trafficLimit, days, deviceLimit, forceDeviceLimit)
 	default:
 		return nil, errors.New("unknown response type")
 	}
 }
 
 func (r *Client) updateUser(ctx context.Context, existingUser *remapi.UsersResponseResponseItem, trafficLimit int, days int) (*remapi.UserResponseResponse, error) {
-	return r.updateUserWithDeviceLimit(ctx, existingUser, trafficLimit, days, nil)
+	return r.updateUserWithDeviceLimit(ctx, existingUser, trafficLimit, days, nil, false)
 }
 
 // updateUserWithDeviceLimit обновляет пользователя с опциональным лимитом устройств
-func (r *Client) updateUserWithDeviceLimit(ctx context.Context, existingUser *remapi.UsersResponseResponseItem, trafficLimit int, days int, deviceLimit *int) (*remapi.UserResponseResponse, error) {
+// forceDeviceLimit - если true, устанавливает лимит принудительно, игнорируя ResolveDeviceLimit
+func (r *Client) updateUserWithDeviceLimit(ctx context.Context, existingUser *remapi.UsersResponseResponseItem, trafficLimit int, days int, deviceLimit *int, forceDeviceLimit bool) (*remapi.UserResponseResponse, error) {
 
 	newExpire := getNewExpire(days, existingUser.ExpireAt)
 
@@ -282,20 +284,27 @@ func (r *Client) updateUserWithDeviceLimit(ctx context.Context, existingUser *re
 	}
 
 	// Применяем лимит устройств если указан тариф
-	// Простая логика: пользователь получает то, за что платит
-	// Если лимит отключен в панели (Null=true) → не трогаем
+	// forceDeviceLimit=true: первая покупка (winback/promo/обычная) — принудительно устанавливаем
+	// forceDeviceLimit=false: повторные покупки — используем ResolveDeviceLimit для защиты VIP
 	if deviceLimit != nil {
-		var currentLimit *int
-		if !existingUser.HwidDeviceLimit.Null {
-			val := existingUser.HwidDeviceLimit.Value
-			currentLimit = &val
-		}
+		if forceDeviceLimit {
+			// Первая покупка — принудительно устанавливаем лимит
+			userUpdate.HwidDeviceLimit = remapi.NewOptNilInt(*deviceLimit)
+			slog.Debug("Force setting device limit (first purchase)", "deviceLimit", *deviceLimit)
+		} else {
+			// Повторные покупки — используем ResolveDeviceLimit для защиты VIP
+			var currentLimit *int
+			if !existingUser.HwidDeviceLimit.Null {
+				val := existingUser.HwidDeviceLimit.Value
+				currentLimit = &val
+			}
 
-		finalLimit := ResolveDeviceLimit(currentLimit, *deviceLimit)
+			finalLimit := ResolveDeviceLimit(currentLimit, *deviceLimit)
 
-		if finalLimit != nil {
-			userUpdate.HwidDeviceLimit = remapi.NewOptNilInt(*finalLimit)
-			slog.Debug("Setting device limit", "currentLimit", currentLimit, "tariffLimit", *deviceLimit, "finalLimit", *finalLimit)
+			if finalLimit != nil {
+				userUpdate.HwidDeviceLimit = remapi.NewOptNilInt(*finalLimit)
+				slog.Debug("Setting device limit", "currentLimit", currentLimit, "tariffLimit", *deviceLimit, "finalLimit", *finalLimit)
+			}
 		}
 	}
 

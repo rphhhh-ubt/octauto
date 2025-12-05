@@ -117,7 +117,7 @@ type mockRemnawaveClient struct {
 	callCount       int
 }
 
-func (m *mockRemnawaveClient) CreateOrUpdateUserWithDeviceLimit(ctx context.Context, customerId int64, telegramId int64, trafficLimit int, days int, isTrialUser bool, deviceLimit *int) (*remapi.UserResponseResponse, error) {
+func (m *mockRemnawaveClient) CreateOrUpdateUserWithDeviceLimit(ctx context.Context, customerId int64, telegramId int64, trafficLimit int, days int, isTrialUser bool, deviceLimit *int, forceDeviceLimit bool) (*remapi.UserResponseResponse, error) {
 	m.lastDays = days
 	m.lastDeviceLimit = deviceLimit
 	m.callCount++

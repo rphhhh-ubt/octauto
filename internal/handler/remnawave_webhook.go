@@ -72,7 +72,7 @@ type yookasaClient interface {
 
 // remnawaveClient интерфейс для работы с Remnawave API
 type remnawaveClient interface {
-	CreateOrUpdateUserWithDeviceLimit(ctx context.Context, customerId int64, telegramId int64, trafficLimit int, days int, isTrialUser bool, deviceLimit *int) (*remapi.UserResponseResponse, error)
+	CreateOrUpdateUserWithDeviceLimit(ctx context.Context, customerId int64, telegramId int64, trafficLimit int, days int, isTrialUser bool, deviceLimit *int, forceDeviceLimit bool) (*remapi.UserResponseResponse, error)
 }
 
 // translationManager интерфейс для работы с переводами
@@ -447,7 +447,7 @@ func (h *RemnawaveWebhookHandler) processRecurringPayment(ctx context.Context, c
 		}
 	}
 
-	_, err = h.remnawave.CreateOrUpdateUserWithDeviceLimit(ctx, customer.ID, telegramID, config.TrafficLimit(), days, false, deviceLimit)
+	_, err = h.remnawave.CreateOrUpdateUserWithDeviceLimit(ctx, customer.ID, telegramID, config.TrafficLimit(), days, false, deviceLimit, false)
 	if err != nil {
 		slog.Error("Failed to extend subscription after recurring payment", "telegramId", utils.MaskHalfInt64(telegramID), "error", err)
 		return fmt.Errorf("failed to extend subscription: %w", err)

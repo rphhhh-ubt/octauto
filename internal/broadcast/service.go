@@ -232,6 +232,8 @@ func (s *BroadcastService) getTargetCustomers(ctx context.Context, targetType st
 		return s.getCustomersWithoutSubscription(ctx)
 	case "expiring":
 		return s.getUsersWithExpiringSubscription(ctx)
+	case "start_only":
+		return s.customerRepository.FindStartOnlyCustomers(ctx)
 	default:
 		return nil, fmt.Errorf("unknown target type: %s", targetType)
 	}

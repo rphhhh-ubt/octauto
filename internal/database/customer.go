@@ -756,6 +756,47 @@ func HasActiveWinbackOffer(customer *Customer) bool {
 	return true
 }
 
+// FindStartOnlyCustomers находит пользователей, которые только нажали /start и ничего не делали
+// Условия: нет подписки (subscription_link IS NULL), нет expire_at, нет покупок
+func (cr *CustomerRepository) FindStartOnlyCustomers(ctx context.Context) ([]Customer, error) {
+	query := `
+		SELECT c.id, c.telegram_id, c.expire_at, c.created_at, c.subscription_link, c.language,
+			   c.trial_inactive_notified_at, c.winback_offer_sent_at, c.winback_offer_expires_at,
+			   c.winback_offer_price, c.winback_offer_devices, c.winback_offer_months,
+			   c.recurring_enabled, c.payment_method_id, c.recurring_tariff_name,
+			   c.recurring_months, c.recurring_amount, c.recurring_notified_at,
+			   c.promo_offer_price, c.promo_offer_devices, c.promo_offer_months,
+			   c.promo_offer_expires_at, c.promo_offer_code_id
+		FROM customer c
+		LEFT JOIN purchase p ON p.customer_id = c.id
+		WHERE c.subscription_link IS NULL
+		  AND c.expire_at IS NULL
+		GROUP BY c.id
+		HAVING COUNT(p.id) = 0
+	`
+
+	rows, err := cr.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query start-only customers: %w", err)
+	}
+	defer rows.Close()
+
+	var customers []Customer
+	for rows.Next() {
+		customer, err := scanCustomerFromRows(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan customer row: %w", err)
+		}
+		customers = append(customers, *customer)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating over customer rows: %w", err)
+	}
+
+	return customers, nil
+}
+
 // ClearWinbackOffer очищает winback предложение после покупки
 func (cr *CustomerRepository) ClearWinbackOffer(ctx context.Context, id int64) error {
 	buildUpdate := sq.Update("customer").

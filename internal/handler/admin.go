@@ -85,6 +85,9 @@ func (h Handler) AdminBroadcastCallback(ctx context.Context, b *bot.Bot, update 
 				{Text: "⏰ С истекающей подпиской", CallbackData: "broadcast_target_expiring"},
 			},
 			{
+				{Text: "👋 Только нажали /start", CallbackData: "broadcast_target_start_only"},
+			},
+			{
 				{Text: "🔙 Назад", CallbackData: "admin_back"},
 			},
 		},
@@ -900,6 +903,8 @@ func getTargetName(targetType string) string {
 		return "Без подписки"
 	case "expiring":
 		return "С истекающей подпиской (3 дня)"
+	case "start_only":
+		return "Только нажали /start"
 	default:
 		return "Неизвестно"
 	}
@@ -932,6 +937,8 @@ func getTargetShortName(targetType string) string {
 		return "Без подп."
 	case "expiring":
 		return "Истекает"
+	case "start_only":
+		return "/start"
 	default:
 		return "?"
 	}

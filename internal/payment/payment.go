@@ -107,7 +107,23 @@ func (s PaymentService) ProcessPurchaseById(ctx context.Context, purchaseId int6
 		}
 	}
 
-	user, err := s.remnawaveClient.CreateOrUpdateUserWithDeviceLimit(ctx, customer.ID, customer.TelegramID, config.TrafficLimit(), purchase.Month*config.DaysInMonth(), false, deviceLimit)
+	// Определяем forceDeviceLimit: если у юзера нет оплаченных покупок — это первая покупка
+	// Первая покупка (winback/promo/обычная) — принудительно устанавливаем deviceLimit
+	// Повторные покупки — используем ResolveDeviceLimit для защиты VIP (админ мог отключить лимит)
+	forceDeviceLimit := false
+	if deviceLimit != nil {
+		hasPaid, err := s.purchaseRepository.HasPaidPurchases(ctx, customer.ID)
+		if err != nil {
+			slog.Warn("Failed to check paid purchases, using force=false", "error", err)
+		} else {
+			forceDeviceLimit = !hasPaid
+			if forceDeviceLimit {
+				slog.Debug("First purchase detected, will force device limit", "customerId", customer.ID)
+			}
+		}
+	}
+
+	user, err := s.remnawaveClient.CreateOrUpdateUserWithDeviceLimit(ctx, customer.ID, customer.TelegramID, config.TrafficLimit(), purchase.Month*config.DaysInMonth(), false, deviceLimit, forceDeviceLimit)
 	if err != nil {
 		return err
 	}
