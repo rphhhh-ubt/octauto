@@ -9,6 +9,8 @@
   "close_button": "✖️ Close",
   "pricing_info": "Russian bank cards and cryptocurrency are accepted for payment\n\n📦 <b>Tariff:</b> Up to {{.devices}} devices",
   "pricing_info_legacy": "Russian bank cards and cryptocurrency are accepted for payment",
+  "select_period_text": "Russian bank cards and cryptocurrency are accepted for payment\n\n📦 <b>Tariff:</b> Up to {{.devices}} devices",
+  "select_payment_text": "Russian bank cards and cryptocurrency are accepted for payment\n\n📦 <b>Tariff:</b> Up to {{.devices}} devices",
   "month_1": "1 month — {{.price}} ₽",
   "month_3": "3 months — {{.price}} ₽",
   "month_6": "6 months — {{.price}} ₽",

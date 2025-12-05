@@ -243,7 +243,7 @@ func (h Handler) showTariffPriceMenuNew(ctx context.Context, b *bot.Bot, chatID 
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart},
 	})
 
-	pricingText := h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+	pricingText := h.translation.GetTextTemplate(langCode, "select_period_text", map[string]interface{}{
 		"devices": tariff.Devices,
 	})
 
@@ -322,7 +322,7 @@ func (h Handler) showTariffPriceMenu(ctx context.Context, b *bot.Bot, callback *
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackStart},
 	})
 
-	pricingText := h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+	pricingText := h.translation.GetTextTemplate(langCode, "select_period_text", map[string]interface{}{
 		"devices": tariff.Devices,
 	})
 
@@ -855,7 +855,7 @@ func (h Handler) showPaymentMethodsWithRecurring(ctx context.Context, b *bot.Bot
 	if tariff != "" {
 		t := config.GetTariffByName(tariff)
 		if t != nil {
-			text = h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+			text = h.translation.GetTextTemplate(langCode, "select_payment_text", map[string]interface{}{
 				"devices": t.Devices,
 			})
 		} else {

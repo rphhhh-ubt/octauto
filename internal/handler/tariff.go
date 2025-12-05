@@ -109,7 +109,7 @@ func (h Handler) TariffCallbackHandler(ctx context.Context, b *bot.Bot, update *
 	}
 
 	// Текст с информацией о тарифе
-	pricingText := h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+	pricingText := h.translation.GetTextTemplate(langCode, "select_period_text", map[string]interface{}{
 		"devices": tariff.Devices,
 	})
 
