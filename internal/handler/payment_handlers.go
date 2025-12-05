@@ -857,6 +857,7 @@ func (h Handler) showPaymentMethodsWithRecurring(ctx context.Context, b *bot.Bot
 		if t != nil {
 			text = h.translation.GetTextTemplate(langCode, "select_payment_text", map[string]interface{}{
 				"devices": t.Devices,
+				"months":  month,
 			})
 		} else {
 			text = h.translation.GetText(langCode, "pricing_info_legacy")
