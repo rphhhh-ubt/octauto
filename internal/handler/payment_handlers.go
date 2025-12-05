@@ -843,10 +843,25 @@ func (h Handler) showPaymentMethodsWithRecurring(ctx context.Context, b *bot.Bot
 		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
 	})
 
+	// Определяем текст с учётом тарифа
+	var text string
+	if tariff != "" {
+		t := config.GetTariffByName(tariff)
+		if t != nil {
+			text = h.translation.GetTextTemplate(langCode, "pricing_info", map[string]interface{}{
+				"devices": t.Devices,
+			})
+		} else {
+			text = h.translation.GetText(langCode, "pricing_info_legacy")
+		}
+	} else {
+		text = h.translation.GetText(langCode, "pricing_info_legacy")
+	}
+
 	_, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    callback.Chat.ID,
 		MessageID: callback.ID,
-		Text:      h.translation.GetText(langCode, "pricing_info_legacy"),
+		Text:      text,
 		ParseMode: models.ParseModeHTML,
 		ReplyMarkup: models.InlineKeyboardMarkup{
 			InlineKeyboard: keyboard,
