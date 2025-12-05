@@ -78,8 +78,9 @@ func (h Handler) showTariffMenu(ctx context.Context, b *bot.Bot, callback *model
 	if err == nil && customer != nil && database.HasActivePromoOffer(customer) {
 		// Добавляем кнопку promo tariff с эмодзи 🎁 в начало меню
 		btnText := h.translation.GetTextTemplate(langCode, "promo_tariff_button", map[string]interface{}{
-			"price":  *customer.PromoOfferPrice,
-			"months": *customer.PromoOfferMonths,
+			"price":   *customer.PromoOfferPrice,
+			"months":  *customer.PromoOfferMonths,
+			"devices": *customer.PromoOfferDevices,
 		})
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{Text: fmt.Sprintf("🎁 %s", btnText), CallbackData: CallbackPromoTariff},
@@ -142,8 +143,9 @@ func (h Handler) showTariffMenuNew(ctx context.Context, b *bot.Bot, chatID int64
 	if err == nil && customer != nil && database.HasActivePromoOffer(customer) {
 		// Добавляем кнопку promo tariff с эмодзи 🎁 в начало меню
 		btnText := h.translation.GetTextTemplate(langCode, "promo_tariff_button", map[string]interface{}{
-			"price":  *customer.PromoOfferPrice,
-			"months": *customer.PromoOfferMonths,
+			"price":   *customer.PromoOfferPrice,
+			"months":  *customer.PromoOfferMonths,
+			"devices": *customer.PromoOfferDevices,
 		})
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{Text: fmt.Sprintf("🎁 %s", btnText), CallbackData: CallbackPromoTariff},
@@ -191,8 +193,9 @@ func (h Handler) showTariffPriceMenuNew(ctx context.Context, b *bot.Bot, chatID 
 	if err == nil && customer != nil && database.HasActivePromoOffer(customer) {
 		// Добавляем кнопку promo tariff с эмодзи 🎁 в начало меню
 		btnText := h.translation.GetTextTemplate(langCode, "promo_tariff_button", map[string]interface{}{
-			"price":  *customer.PromoOfferPrice,
-			"months": *customer.PromoOfferMonths,
+			"price":   *customer.PromoOfferPrice,
+			"months":  *customer.PromoOfferMonths,
+			"devices": *customer.PromoOfferDevices,
 		})
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{Text: fmt.Sprintf("🎁 %s", btnText), CallbackData: CallbackPromoTariff},
@@ -269,8 +272,9 @@ func (h Handler) showTariffPriceMenu(ctx context.Context, b *bot.Bot, callback *
 	if err == nil && customer != nil && database.HasActivePromoOffer(customer) {
 		// Добавляем кнопку promo tariff с эмодзи 🎁 в начало меню
 		btnText := h.translation.GetTextTemplate(langCode, "promo_tariff_button", map[string]interface{}{
-			"price":  *customer.PromoOfferPrice,
-			"months": *customer.PromoOfferMonths,
+			"price":   *customer.PromoOfferPrice,
+			"months":  *customer.PromoOfferMonths,
+			"devices": *customer.PromoOfferDevices,
 		})
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{Text: fmt.Sprintf("🎁 %s", btnText), CallbackData: CallbackPromoTariff},
@@ -361,8 +365,9 @@ func (h Handler) showLegacyPriceMenu(ctx context.Context, b *bot.Bot, callback *
 	if err == nil && customer != nil && database.HasActivePromoOffer(customer) {
 		// Добавляем кнопку promo tariff с эмодзи 🎁 в начало меню
 		btnText := h.translation.GetTextTemplate(langCode, "promo_tariff_button", map[string]interface{}{
-			"price":  *customer.PromoOfferPrice,
-			"months": *customer.PromoOfferMonths,
+			"price":   *customer.PromoOfferPrice,
+			"months":  *customer.PromoOfferMonths,
+			"devices": *customer.PromoOfferDevices,
 		})
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{Text: fmt.Sprintf("🎁 %s", btnText), CallbackData: CallbackPromoTariff},
@@ -999,8 +1004,9 @@ func (h Handler) showLegacyPriceMenuNew(ctx context.Context, b *bot.Bot, chatID 
 	if err == nil && customer != nil && database.HasActivePromoOffer(customer) {
 		// Добавляем кнопку promo tariff с эмодзи 🎁 в начало меню
 		btnText := h.translation.GetTextTemplate(langCode, "promo_tariff_button", map[string]interface{}{
-			"price":  *customer.PromoOfferPrice,
-			"months": *customer.PromoOfferMonths,
+			"price":   *customer.PromoOfferPrice,
+			"months":  *customer.PromoOfferMonths,
+			"devices": *customer.PromoOfferDevices,
 		})
 		keyboard = append(keyboard, []models.InlineKeyboardButton{
 			{Text: fmt.Sprintf("🎁 %s", btnText), CallbackData: CallbackPromoTariff},

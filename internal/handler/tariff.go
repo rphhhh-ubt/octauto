@@ -32,7 +32,7 @@ func FormatTariffButtonText(tariff config.Tariff, langCode string, tm *translati
 	// Считаем среднемесячную цену от годовой подписки
 	monthlyPrice := tariff.Price12 / 12
 
-	return fmt.Sprintf("%s До %d устройств — от %d ₽/мес", emoji, tariff.Devices, monthlyPrice)
+	return fmt.Sprintf("%s До %d устройств — от %d ₽/мес (за год)", emoji, tariff.Devices, monthlyPrice)
 }
 
 // TariffCallbackHandler обрабатывает выбор тарифа и показывает меню цен
