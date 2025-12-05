@@ -512,7 +512,9 @@ func checkYookasaInvoice(
 		// Управление recurring после успешной оплаты YooKassa
 		if invoice.IsPaymentMethodSaved() {
 			// Пользователь включил автопродление — сохраняем payment_method_id
-			saveRecurringPaymentMethod(ctx, invoice, purchase.CustomerID, customerRepository)
+			// Передаём purchase для fallback данных (если пользователь не включил recurring в боте,
+			// но разрешил автосписания на форме ЮКассы)
+			saveRecurringPaymentMethod(ctx, invoice, purchase.CustomerID, customerRepository, &purchase)
 		} else {
 			// Пользователь НЕ включил автопродление для этой покупки — отключаем recurring
 			// Но карту не удаляем — она может пригодиться для будущих покупок
@@ -528,11 +530,14 @@ func checkYookasaInvoice(
 
 // saveRecurringPaymentMethod сохраняет payment_method_id и настройки рекуррентных платежей
 // Requirements: 1.3
+// purchase передаётся для fallback данных, если метаданные отсутствуют
+// (случай когда пользователь не включил recurring в боте, но разрешил автосписания на форме ЮКассы)
 func saveRecurringPaymentMethod(
 	ctx context.Context,
 	invoice *yookasa.Payment,
 	customerID int64,
 	customerRepository *database.CustomerRepository,
+	purchase *database.Purchase,
 ) {
 	paymentMethodID := invoice.GetPaymentMethodID().String()
 
@@ -554,6 +559,25 @@ func saveRecurringPaymentMethod(
 	if a, ok := invoice.Metadata["recurring_amount"]; ok {
 		if amountInt, err := strconv.Atoi(a); err == nil {
 			amount = &amountInt
+		}
+	}
+
+	// Fallback: если метаданные отсутствуют (пользователь не включил recurring в боте,
+	// но разрешил автосписания на форме ЮКассы), берём данные из purchase
+	if purchase != nil {
+		if tariffName == nil && purchase.TariffName != nil {
+			tariffName = purchase.TariffName
+			slog.Info("Using tariff name from purchase (fallback)", "tariffName", *tariffName)
+		}
+		if months == nil && purchase.Month > 0 {
+			m := purchase.Month
+			months = &m
+			slog.Info("Using months from purchase (fallback)", "months", m)
+		}
+		if amount == nil && purchase.Amount > 0 {
+			a := int(purchase.Amount)
+			amount = &a
+			slog.Info("Using amount from purchase (fallback)", "amount", a)
 		}
 	}
 
