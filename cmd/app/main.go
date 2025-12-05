@@ -573,12 +573,24 @@ func saveRecurringPaymentMethod(
 			"paymentMethodID", paymentMethodID,
 			"error", err)
 	} else {
+		// Разыменовываем указатели для логирования
+		var tariffNameVal string
+		var monthsVal, amountVal int
+		if tariffName != nil {
+			tariffNameVal = *tariffName
+		}
+		if months != nil {
+			monthsVal = *months
+		}
+		if amount != nil {
+			amountVal = *amount
+		}
 		slog.Info("Recurring payment method saved",
 			"customerID", customerID,
 			"paymentMethodID", paymentMethodID,
-			"tariffName", tariffName,
-			"months", months,
-			"amount", amount)
+			"tariffName", tariffNameVal,
+			"months", monthsVal,
+			"amount", amountVal)
 	}
 }
 
