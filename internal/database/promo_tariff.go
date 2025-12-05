@@ -195,6 +195,23 @@ func (r *PromoTariffRepository) SetActive(ctx context.Context, id int64, isActiv
 
 // Delete удаляет промокод
 func (r *PromoTariffRepository) Delete(ctx context.Context, id int64) error {
+	// Сначала обнуляем ссылки на этот промокод в customer
+	clearQuery := sq.Update("customer").
+		Set("promo_offer_code_id", nil).
+		Where(sq.Eq{"promo_offer_code_id": id}).
+		PlaceholderFormat(sq.Dollar)
+
+	clearSQL, clearArgs, err := clearQuery.ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build clear references query: %w", err)
+	}
+
+	_, err = r.pool.Exec(ctx, clearSQL, clearArgs...)
+	if err != nil {
+		return fmt.Errorf("failed to clear promo code references: %w", err)
+	}
+
+	// Теперь удаляем сам промокод
 	query := sq.Delete("promo_tariff_code").
 		Where(sq.Eq{"id": id}).
 		PlaceholderFormat(sq.Dollar)
