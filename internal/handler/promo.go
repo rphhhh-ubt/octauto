@@ -210,10 +210,17 @@ func (h Handler) sendPromoTariffActivatedMessage(ctx context.Context, b *bot.Bot
 	months := *customer.PromoOfferMonths
 	devices := *customer.PromoOfferDevices
 
-	// Форматируем срок действия
+	// Форматируем срок действия (через X часов/дней — не зависит от timezone)
 	expiresStr := ""
 	if expiresAt != nil {
-		expiresStr = expiresAt.Format("02.01.2006 15:04")
+		hours := int(time.Until(*expiresAt).Hours())
+		if hours > 48 {
+			expiresStr = fmt.Sprintf("%d дн.", hours/24)
+		} else if hours > 0 {
+			expiresStr = fmt.Sprintf("%d ч.", hours)
+		} else {
+			expiresStr = "< 1 ч."
+		}
 	}
 
 	// Форматируем период
@@ -239,7 +246,7 @@ func (h Handler) sendPromoTariffActivatedMessage(ctx context.Context, b *bot.Bot
 			"💰 Цена: <b>%d₽</b>\n"+
 			"📅 Период: <b>%d %s</b>\n"+
 			"📱 Устройств: <b>%d %s</b>\n\n"+
-			"⏰ Предложение действует до: <b>%s</b>",
+			"⏰ Предложение истекает через: <b>%s</b>",
 		price, months, monthsWord, devices, devicesWord, expiresStr,
 	)
 
