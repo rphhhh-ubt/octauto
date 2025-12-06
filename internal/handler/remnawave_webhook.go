@@ -577,7 +577,7 @@ func (h *RemnawaveWebhookHandler) processUserExpired24HoursAgo(ctx context.Conte
 		h.tm.GetText(lang, "winback_offer"),
 		price,
 		devices,
-		expiresAt.Format("02.01.2006 15:04"),
+		validHours,
 	)
 
 	// Кнопка активации winback
