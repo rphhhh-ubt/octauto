@@ -846,8 +846,13 @@ func (h Handler) showPaymentMethodsWithRecurring(ctx context.Context, b *bot.Bot
 		}
 	}
 
+	// Кнопка "Назад" ведёт в меню периодов для текущего тарифа
+	backCallback := CallbackBuy
+	if tariff != "" {
+		backCallback = fmt.Sprintf("%s?name=%s", CallbackTariff, tariff)
+	}
 	keyboard = append(keyboard, []models.InlineKeyboardButton{
-		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: CallbackBuy},
+		{Text: h.translation.GetText(langCode, "back_button"), CallbackData: backCallback},
 	})
 
 	// Определяем текст с учётом тарифа
